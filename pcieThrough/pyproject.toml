@@ -1,0 +1,14 @@
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "setuptools_scm[toml]>=6.2",
+    "torch",
+    "torch-npu",
+    "wheel",
+    "heterofusedkernels"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pcie_through"
+version = "0.1.0"

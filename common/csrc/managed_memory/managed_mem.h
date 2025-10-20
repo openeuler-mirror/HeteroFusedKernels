@@ -1,0 +1,88 @@
+#pragma once
+#include <shared_mutex>
+#include <map>
+#include <torch/torch.h>
+#include <torch/extension.h>
+
+namespace managed_memory {
+
+struct RegisteredMemoryRecord {
+    uintptr_t ptr;
+    uintptr_t devptr;
+    size_t buffSize;
+    int32_t device;
+};
+
+/* 
+* We are not responsible for acl init and ctx initialization,
+* we assume the user responsible for ctx initialization
+*/
+class HostRegisteredMemoryManager {
+private:
+    HostRegisteredMemoryManager();
+
+    // Delete copy constructor and assignment operator
+    HostRegisteredMemoryManager(const HostRegisteredMemoryManager&) = delete;
+    HostRegisteredMemoryManager& operator=(const HostRegisteredMemoryManager&) = delete;
+    HostRegisteredMemoryManager(HostRegisteredMemoryManager&&) = delete;
+    HostRegisteredMemoryManager& operator=(HostRegisteredMemoryManager&&) = delete;
+
+    std::map<void*, RegisteredMemoryRecord> allocatedMap;
+    mutable std::shared_mutex mux;
+    
+public:
+    static HostRegisteredMemoryManager& GetInstance()
+    {
+        static HostRegisteredMemoryManager instance;
+        return instance;
+    }
+    ~HostRegisteredMemoryManager();
+    
+    // Register a pointer through high level APIs (aclrt) return devPtr
+    // Returns an already existing RegisteredMemoryRecord or the newly created one
+    // Inputs: 
+    // -hostPtr: host pointer of the allocated memory area to register on device
+    // -bufferSize: size of the allocated memory area to register on device
+    RegisteredMemoryRecord*  registerHostPtr(void* hostPtr, size_t bufferSize); //torch::Tensor& tensor); // 
+    // Register a pointer through low level APIs (hal)
+    // This should be used for driver versions, where cannot rely on aclrtHostRegister()
+    // Returns the created RegisteredMemoryRecord
+    // Inputs: 
+    // -hostPtr: host pointer of the allocated memory area to register on device
+    // -bufferSize: size of the allocated memory area to register on device
+    RegisteredMemoryRecord*  halRegisterHostPtr(void* hostPtr, size_t bufferSize);
+    int                    aclUnregisterHostPtr(void* hostPtr);
+    int                    halUnregisterHostPtr(void* hostPtr);
+    void*                   getDevicePtr(void* hostPtr);
+    size_t                  getRecordSize(void* hostPtr);
+    void                    unregisterAll();
+};
+
+// Get the version of the NPU driver as a string
+std::string get_driver_version();
+// Checks whether the major version of the NPU is greater or equal 25 to support aclrtHostRegister
+bool is_version_at_least_25(const std::string& version_str);
+// Gets the current device offsetting on ASCEND_RT_VISIBLE_DEVICES when needed
+int get_device();
+// Uregisters the malloced hostPtr
+void hal_host_unregister_ptr(void* ptr);
+// Swaps the host memory allocated to a tensor with the given hostPtr
+void swap_tensor_ptr(void* hostPtr, torch::Tensor& original_tensor);
+
+
+} // namespace managed_memory
+
+void* register_ptr(void* ptr, size_t size);
+int unregister_ptr(void* ptr);
+
+// Register a tensor on the current device
+// Inputs: 
+// -tensor: The tensor to register on the device
+// Returns the device ptr for that tensor
+void* register_tensor(torch::Tensor& tensor);
+// Reverse of register
+// Inputs: 
+// -tensor: The tensor to register on the device
+void  unregister_tensor(torch::Tensor& tensor);
+// Takes in input a host pointer, returns the corresponding device pointer
+uintptr_t get_device_ptr(uintptr_t ptr);

@@ -1,3 +1,3 @@
 # HeteroFusedKernels
 
-A set of acceleration library.
+A set of acceleration libraries.

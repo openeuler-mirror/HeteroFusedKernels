@@ -83,13 +83,17 @@ uintptr_t alloc_pinned_numa_ptr(std::size_t size, int node) {
         throw std::runtime_error(std::string("mmap failed: ") + strerror(errno));
     }
 
-    // Maximum of 64 numa nodes
-    unsigned long mask = 1UL << node;
-    long maxnode = 8 * sizeof(mask);
-    int err = mbind(ptr, size, MPOL_BIND, &mask, maxnode, MPOL_MF_MOVE | MPOL_MF_STRICT);
-    if (err != 0) {
-        munmap(ptr, size);
-        throw std::runtime_error(std::string("mbind failed: ") + strerror(errno));
+    if (node != -1) {
+        // We have a valid numa node number & maximum of 64 numa nodes
+        // In machines like Huawei 910C, numa_node can returned as -1, indicating no numa.
+        // This is due to the NPUs are connected via switches.
+        unsigned long mask = 1UL << node;
+        long maxnode = 8 * sizeof(mask);
+        int err = mbind(ptr, size, MPOL_BIND, &mask, maxnode, MPOL_MF_MOVE | MPOL_MF_STRICT);
+        if (err != 0) {
+            munmap(ptr, size);
+            throw std::runtime_error(std::string("mbind failed: ") + strerror(errno));
+        }
     }
 
     memset(ptr, 0, size);

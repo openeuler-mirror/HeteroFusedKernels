@@ -5,7 +5,12 @@
 * test_memcpy.py is for testing embedding lookup via H2D using memcpy via Torch API.
 * test_gather.py is for testing embedding lookup via H2D using our pciethrough gather kernel.
 ### KVCache transfer
-* test_transfer_kernel.py is for testing KVCache blocks transfer for H2D, using our pciethrough transfer kernel.
+* test_transfer_kernel.py is for testing KVCache blocks transfer for H2D, using our transfer kernel.
+  * To run the test_transfer_kernel.py use `pytest -vs test_transfer_kernel.py`
+  * We have two operators in the the transfer_kernel tests
+    * PCIEThrough - directly pull kvcache from the host.
+    * FusedMemcpyTransferKernel - the idea is to allow us having a staging block cache in scenario where pciethrough doesn't perform well.
+
 
 ## Test Result
 ### Embedding Lookup

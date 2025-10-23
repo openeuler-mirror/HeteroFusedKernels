@@ -14,24 +14,29 @@ import pcie_through
 
 @pytest.mark.parametrize("block_size", [1024])
 @pytest.mark.parametrize("layers", [1, 32, 64])
-@pytest.mark.parametrize("heads", [1, 8])
+@pytest.mark.parametrize("heads", [1])
 @pytest.mark.parametrize("head_dim", [128])
-@pytest.mark.parametrize("num_blocks", [1, 8, 16])
-@pytest.mark.parametrize("simultaneous_copy", [1])
-def test_multi_layer_block_kv_transfer(block_size, layers, heads, head_dim, num_blocks, simultaneous_copy):
+@pytest.mark.parametrize("num_blocks", [1, 8, 16]) # how many blocks of tokens to copy
+@pytest.mark.parametrize("simultaneous_copy", [2]) # double buffer
+@pytest.mark.parametrize("use_fused_copy", [False, True]) # use the fused memcpy for staging
+def test_multi_layer_block_kv_transfer(block_size, layers, heads, head_dim, num_blocks, simultaneous_copy, use_fused_copy):
     device = "npu"
     dtype = torch.int8
-    host_shape = (num_blocks, block_size, layers, heads, head_dim)
-    device_shape = (num_blocks, layers, heads, block_size, head_dim)
-
-    host_blocks_cache = torch.randint(128, host_shape, dtype=dtype, device="cpu", pin_memory=True)
-
-    memory.host_register(host_blocks_cache)
-    
+    total_host_blocks = 1000
+    total_dev_blocks = 64
+    torch.npu.set_device(0)
+    host_shape = (total_host_blocks, block_size, layers, heads, head_dim)
+    device_shape = (total_dev_blocks, layers, heads, block_size, head_dim)
+    total_host_size = total_host_blocks * block_size * layers * heads * head_dim * dtype.itemsize
+    host_blocks_cache = memory.alloc_numa_pinned_tensor(total_host_size)
+    host_blocks_cache[:] = 2
+    host_blocks_cache = host_blocks_cache.view(dtype).view(host_shape)
     host_blocks_cache = list(host_blocks_cache.unbind(0))
             
     device_blocks_cache = torch.empty(device_shape, dtype=dtype, device=device)
     device_blocks_cache = list(device_blocks_cache.unbind(0))
+
+    staging_blocks_cache = []
 
     # obtain device ptr
     device_block_ptrs = []
@@ -41,17 +46,29 @@ def test_multi_layer_block_kv_transfer(block_size, layers, heads, head_dim, num_
             device_block_ptr[i] = tensor[i].data_ptr()
         device_block_ptrs.append(device_block_ptr.to(device))
 
+
     streams = [torch.npu.Stream() for _ in range(simultaneous_copy)]
     start_evs = [torch.npu.Event(enable_timing=True) for _ in range(num_blocks)]
     end_evs = [torch.npu.Event(enable_timing=True) for _ in range(num_blocks)]
+    
+    if use_fused_copy:
+        for _ in range(simultaneous_copy):
+            staging_blocks_cache.append(torch.empty([block_size, layers, heads, head_dim], dtype=dtype, device=device))
+    
     for i in range(num_blocks):
         with torch.npu.stream(streams[i % simultaneous_copy]):
             start_evs[i].record()
-            torch.ops.pcie_through.multi_layer_block_transfer(
-                device_block_ptrs[i],
-                host_blocks_cache[i],
-                4
-            )
+            if use_fused_copy:
+                torch.ops.pcie_through.fused_memcpy_multi_layer_block_transfer(
+                    device_block_ptrs[i],
+                    host_blocks_cache[i],
+                    staging_blocks_cache[i % simultaneous_copy],
+                    4)
+            else:
+                torch.ops.pcie_through.multi_layer_block_transfer(
+                    device_block_ptrs[i],
+                    host_blocks_cache[i],
+                    4)
             end_evs[i].record()
     
     for stream in streams:

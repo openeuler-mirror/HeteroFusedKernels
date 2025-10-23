@@ -12,12 +12,23 @@ pip install -v --no-build-isolation -e .
 
 ## Usage
 
+### KV Transfer operator
+
 ```python
 import pcie_through
-
+# no staging buffer
 torch.ops.pcie_through.multi_layer_block_transfer(
-    a_tensor_thathold_layersptr,
-    host_registered_tensor
+    a_device_tensor_thathold_layersptr,
+    host_registered_tensor,
+    aiv_num
+)
+
+# with staging buffer
+torch.ops.pcie_through.fused_memcpy_multi_layer_block_transfer(
+    a_device_tensor_thathold_layersptr,
+    host_tensor,
+    staging_device_tensor,
+    aiv_num
 )
 ```
 

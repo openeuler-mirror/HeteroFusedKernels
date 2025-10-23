@@ -34,7 +34,6 @@ def test_multi_layer_block_kv_transfer(block_size, layers, heads, head_dim, num_
     host_blocks_cache = list(host_blocks_cache.unbind(0))
             
     device_blocks_cache = torch.empty(device_shape, dtype=dtype, device=device)
-    device_blocks_cache[:] = 1
     device_blocks_cache = list(device_blocks_cache.unbind(0))
 
     staging_blocks_cache = []

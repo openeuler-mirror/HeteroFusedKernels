@@ -1,12 +1,24 @@
 # Test benchmark
 
+## Pre-requisite
+
+- Install the heterogenous package from common following the [common/README.md](../../common/README.md).
+- Install the pciethrough package following the [README.md](../README.md)
+
 ## File structure
 ### Embedding Lookup
 * test_memcpy.py is for testing embedding lookup via H2D using memcpy via Torch API (simulating copy 10 times).
 * test_gather.py is for testing embedding lookup via H2D using our pciethrough gather kernel (simulating copy 10 times).
 * test_gather_combine.py is for testing embedding lookup via H2D using our pciethrough gather kernel (copying ten sets of data at once).
 ### KVCache transfer
-* test_transfer_kernel.py is for testing KVCache blocks transfer for H2D, using our pciethrough transfer kernel.
+* test_transfer_kernel.py is for testing KVCache blocks transfer for H2D, using our transfer kernel.
+  * We have two operators in the the transfer_kernel tests
+    * PCIEThrough - directly pull kvcache from the host.
+    * FusedMemcpyTransferKernel - the idea is to allow us having a staging block cache in scenario where pciethrough doesn't perform well.
+
+#### Testing Steps
+Run the following cmd ```pytest -vs test_transfer_kernel.py```
+
 
 ## Test Result
 ### Embedding Lookup
@@ -40,3 +52,24 @@ pip install -v --no-build-isolation -e .
 cd {$projectpath}/pcie_through/tests
 numactl --membind=0 --cpunodebind=0 python test_{$testname}.py
 ```
+
+### KVCache Transfer
+
+#### Test Environment
+* Linux 5.15
+* Cann 8.2.rc1
+* Python 3.11
+* NPU Ascend910_9392
+
+> Note: We measure the per op bandwidth.
+
+#### Result
+
+The below result is tested in int8 dtype using 4 AIV.
+
+| KV Block [blockSize, layers, heads, headdim]| PCIEThrough | FusedMemcpyKernel |
+| :-----:| :----: | :----: |
+| [1024, 32, 1, 128] | 9.65 GB/s  | 15.50 GB/s |
+| [1024, 32, 8, 128] | 26.52 GB/s | 19.49 GB/s |
+| [1024, 64, 1, 128] | 22.03 GB/s | 20.92 GB/s |
+| [1024, 64, 8, 128] | 34.11 GB/s | 22.55 GB/s |

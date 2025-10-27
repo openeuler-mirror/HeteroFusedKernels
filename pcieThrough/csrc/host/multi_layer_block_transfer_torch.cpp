@@ -11,10 +11,30 @@ namespace py = pybind11;
 namespace pciethrough {
 
 at::Tensor mvTilingToDevice(MultiLayerBlockTransferTilingData *tilingData, size_t tilingDataSize) {
-    auto buffer = at::empty({static_cast<int64_t>(tilingDataSize)}, at::kByte);
-    auto err = memcpy_s(buffer.data_ptr(), tilingDataSize, reinterpret_cast<void*>(tilingData), tilingDataSize);
+    // 1. Allocate the two tensors (host and device)
+    // 2. copy the content of the host tensor to device aynchronously
+    // This structure avoids the read-after-write when using .to() that forces the synchronization
+    // of the CPU thread on the copy of the tensor to the device.
+
+    int deviceIndex = 0;
+    c10_npu::GetDevice(&deviceIndex);
+
+    auto hostOptions = at::TensorOptions().dtype(at::kByte).pinned_memory(true);
+    at::Tensor hostBuffer = at::empty({static_cast<int64_t>(tilingDataSize)}, hostOptions);
+
+    auto err = memcpy_s(hostBuffer.data_ptr(), tilingDataSize, reinterpret_cast<void*>(tilingData), tilingDataSize);
     TORCH_CHECK(err == EOK, "memcpy_s failed");
-    auto tilingDeviceTensor = CopyTensorHostToDevice(buffer);
+
+    auto deviceOptions = at::TensorOptions()
+                             .device(c10::Device(DEVICE_TYPE, deviceIndex))
+                             .dtype(at::kByte);
+    at::Tensor tilingDeviceTensor = at::empty({static_cast<int64_t>(tilingDataSize)}, deviceOptions);
+
+    const aclrtStream stream = c10_npu::getCurrentNPUStream().stream();
+    auto ret = aclrtMemcpyAsync(tilingDeviceTensor.data_ptr(), static_cast<size_t>(tilingDeviceTensor.nbytes()),
+                                hostBuffer.data_ptr(), static_cast<size_t>(hostBuffer.nbytes()), ACL_MEMCPY_HOST_TO_DEVICE, stream);
+    TORCH_CHECK(ret == ACL_SUCCESS, "Unable to copy the kv block to the staging block with Memcpy Async");
+
     return tilingDeviceTensor;
 }
 

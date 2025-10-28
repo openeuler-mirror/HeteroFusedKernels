@@ -7,14 +7,6 @@ namespace pciethrough {
 
 #define DEVICE_TYPE c10::DeviceType::PrivateUse1
 
-inline at::Tensor CopyTensorHostToDevice(const at::Tensor& cpu_tensor)
-{
-    at::Tensor cpuPinMemTensor = cpu_tensor.pin_memory();
-    int deviceIndex = 0;
-    c10_npu::GetDevice(&deviceIndex);
-    return cpuPinMemTensor.to(c10::Device(DEVICE_TYPE, deviceIndex), cpuPinMemTensor.scalar_type(), true, true);
-}
-
 inline void *ConvertType(const at::Tensor &at_tensor)
 {
     return const_cast<void *>(at_tensor.data_ptr());

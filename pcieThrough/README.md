@@ -68,7 +68,7 @@ torch.ops.pcie_through.gather(
 
 For detailed usage see `tests/test_gather.py`
 
-### KV Transfer operator
+### KV Transfer operators
 
 ```python
 import pcie_through
@@ -88,7 +88,7 @@ torch.ops.pcie_through.fused_memcpy_multi_layer_block_transfer(
 )
 ```
 
-For detailed usage see `tests/test_transfer_kernel.py`
+For detailed usage see [tests/test_transfer_kernel.py](the unit test file) for the operators.
 
 ## Compatibility
 

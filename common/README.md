@@ -1,6 +1,8 @@
 # HeteroFusedKernels Common
 
-We provide common utils for HeteroFusedKernels repo in this module. Such utils include the management of device-accessible host memory and the related device communication management.
+This module provides common utils for HeteroFusedKernels repo. Such utils include the management of device-accessible host memory and the related device communication management.
+
+> Note: the pcie_through module of this repo relies on the common module. Please make sure you install this module before installing pcie_through.
 
 ## Install
 

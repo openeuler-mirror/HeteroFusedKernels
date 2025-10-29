@@ -3,7 +3,7 @@
 This module provides PCIEThrough Ascend NPU operators for zero-copy embeddings gathering and KV-cache block transfer.
 
 ## Install
-
+> Note: this module relies on the common module of HeteroFusedKernels. Please make sure you have that module already installed. 
 ```bash
 pip install -v --no-build-isolation -e .
 ```

@@ -61,6 +61,7 @@ void multi_layer_block_transfer(const at::Tensor &deviceBlockCachePtrs, const at
     uint32_t aivNum = 2;
     if (aiv.has_value()) {
         aivNum = aiv.value();
+        TORCH_CHECK(aivNum > 0, "Number of AIV blocks should be positive.")
     }
 
     size_t tilingDataSize = sizeof(MultiLayerBlockTransferTilingData);
@@ -84,6 +85,7 @@ void fused_memcpy_multi_layer_block_transfer(const at::Tensor& deviceBlockCacheP
     uint32_t aivNum = 2;
     if (aiv.has_value()) {
         aivNum = aiv.value();
+        TORCH_CHECK(aivNum > 0, "Number of AIV blocks should be positive.")
     }
 
     size_t tilingDataSize = sizeof(MultiLayerBlockTransferTilingData);

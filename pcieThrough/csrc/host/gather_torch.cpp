@@ -33,6 +33,7 @@ void gather(torch::Tensor &gmEmbed, torch::Tensor &gmEmbedDst, torch::Tensor &gm
     uint32_t aivNum = 2;
     if (aiv.has_value()) {
         aivNum = aiv.value();
+        TORCH_CHECK(aivNum > 0, "Number of AIV blocks should be positive.")
     }
 
     uint32_t numIds = gmIds.size(0);

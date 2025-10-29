@@ -22,20 +22,24 @@ torch.ops.pcie_through.gather(
     input_ids)
 
 # Copies a KV-Cache block `srcBlock` from the host memory to the device memory rearranging its memory layout.
-# `dstPtrs`: a 1D tensor on NPU that holds a list of pointers, where each pointer points to a tensor that is a layer of the KVCache block residing in the device HBM.
-# The expected shape is [ Layers ], and each layer pointer points to a KVCache block in the shape of [ Heads, BlockSize, HeadDim ].
-# `srcBlock`: the host KVCache block, that is a hostRegistered tensor that resides in the host main memory and has shape [BlockSize, Layers, Heads, HeadDims].
+# `dstPtrs`: a 1D tensor on NPU that holds a list of pointers, where each pointer points to a tensor that is a layer of
+# the KVCache block residing in the device HBM. The expected shape is [ Layers ], and each layer pointer points to a 
+# KVCache block in the shape of [ Heads, BlockSize, HeadDim ].
+# `srcBlock`: the host KVCache block, that is a hostRegistered tensor that resides in the host main memory and 
+# has shape [BlockSize, Layers, Heads, HeadDims].
 # (Optional) `aivNum`: the number of AIVector cores used for the zero-copy transfer.
 torch.ops.pcie_through.multi_layer_block_transfer(
     dstPtrs,
     srcBlock,
     aivNum )
 
-# Copies a KV-Cache block `srcBlock` from the host memory to the device memory rearranging its memory layout. Performs an intermediate memcpy from host to a 
-# device stagingBlock before rearranging the KV Cache in the appropriate layout.
-# `dstPtrs`: a 1D tensor on NPU that holds a list of pointers, where each pointer points to a tensor that is a layer of the KVCache block residing in the device HBM.
-# The expected shape is [ Layers ], and each layer pointer points to a KVCache block in the shape of [ Heads, BlockSize, HeadDim ].
-# `srcBlock`: the host KVCache block, that is a hostRegistered tensor that resides in the host main memory and has shape [BlockSize, Layers, Heads, HeadDims].
+# Copies a KV-Cache block `srcBlock` from the host memory to the device memory rearranging its memory layout. Performs 
+# an intermediate memcpy from host to a device stagingBlock before rearranging the KV Cache in the appropriate layout.
+# `dstPtrs`: a 1D tensor on NPU that holds a list of pointers, where each pointer points to a tensor that is a layer 
+# of the KVCache block residing in the device HBM. The expected shape is [ Layers ], and each layer pointer points to 
+# a KVCache block in the shape of [ Heads, BlockSize, HeadDim ].
+# `srcBlock`: the host KVCache block, that is a hostRegistered tensor that resides in the host main memory and has
+# shape [BlockSize, Layers, Heads, HeadDims].
 # `stagingBlockCache`:  a tensor in the HBM with the same shape as the srcBlock [BlockSize, Layers, Heads, HeadDim]. 
 # (Optional) `aivNum`: the number of AIVector cores used for the zero-copy transfer.
 torch.ops.pcie_through.fused_memcpy_multi_layer_block_transfer(

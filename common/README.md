@@ -58,10 +58,9 @@ print(memory.get_device_ptr(pinnedTensor.data_ptr()))
 
 ## Compatibility
 
-This module has been tested with:
-* torch and torch_npu v2.5.1-v2.7.1
-* CANN stack 8.2.RC1
-* Ascend driver v25.0.rc1.1
-Tested on the following hardware setup: 
-* A2 910B
-* A3 910C
+| Component | Tested Versions/Details |
+| :--- | :--- |
+| `torch` and `torch_npu` | v2.5.1-v2.7.1 |
+| `CANN stack` | 8.2.RC1 |
+| `Ascend driver` | v25.0.rc1.1 |
+| `Hardware Setup` | A2 910B, A3 910C |

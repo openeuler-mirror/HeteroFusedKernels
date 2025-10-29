@@ -2,8 +2,6 @@
 
 This module provides PCIEThrough Ascend NPU operators for zero-copy embeddings gathering and KV-cache block transfer.
 
-> NOTE: Ascend A2 and A3 are supported.
-
 ## Install
 
 ```bash

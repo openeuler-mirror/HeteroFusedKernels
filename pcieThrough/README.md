@@ -88,7 +88,7 @@ torch.ops.pcie_through.fused_memcpy_multi_layer_block_transfer(
 )
 ```
 
-For detailed usage see [tests/test_transfer_kernel.py](the unit test file) for the operators.
+For detailed usage see [the unit test file](tests/test_transfer_kernel.py) for the operators.
 
 ## Compatibility
 

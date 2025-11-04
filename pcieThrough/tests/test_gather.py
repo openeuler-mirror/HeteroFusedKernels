@@ -52,7 +52,8 @@ def benchmark():
             torch.ops.pcie_through.gather(
                     embed,
                     embedDst,
-                    input_ids[run, :]
+                    input_ids[run, :],
+                    aiv=4
                 )
         torch.npu.synchronize()
         b = time.time()

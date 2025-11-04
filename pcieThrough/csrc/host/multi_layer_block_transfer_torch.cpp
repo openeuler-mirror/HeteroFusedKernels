@@ -49,8 +49,7 @@ DATATYPE fromAtenScalarType(at::ScalarType scalarType) {
         case at::ScalarType::Char:
             return DATATYPE::INT8_T;
         default:
-            auto p = c10::getDtypeNames(scalarType);
-            TORCH_CHECK(false, "ScalarType " + p.first + " not supported.")
+            TORCH_CHECK(false, std::string("ScalarType ") + c10::toString(scalarType) + " not supported.")
     }
 }
 
